@@ -2,22 +2,15 @@
 
 require 'vendor/autoload.php';
 
-/*
- * 1- VERB
- * 2- Resource //Products
- * 3- Resource ID
- * 4- Extra Params
- */
-
 $db = new MySQLHandler('products');
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 $urlParts = explode('/', $_SERVER['REQUEST_URI']);
 
-$resource = $urlParts[2] ?? null;
+$resource = $urlParts[3] ?? null;
 
-$resourceID = $urlParts[3] ?? null;
+$resourceID = $urlParts[4] ?? null;
 
 if ($resource !== 'products') {
     http_response_code(404);
@@ -44,35 +37,38 @@ switch ($method) {
         break;
 
     case 'POST':
-        //validate required product data
         $success = $db->save($_POST);
         if ($success) {
             http_response_code(201);
+            echo json_encode(['message' => 'Product created successfully','data' => $_POST]);
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Product creation failed']);
         }
-
         break;
 
     case 'PUT':
-        if ($resourceID) {
-            $_PUT = json_decode(file_get_contents("php://input"), true);
-            $db->update($_PUT, $resourceID);
+            if ($resourceID) {
+                $_PUT = json_decode(file_get_contents("php://input"), true);
+                $db->update($_PUT, $resourceID);
+                echo json_encode(['message' => 'Product updated successfully','data' => $_PUT]);
+                break;
+            }
+            http_response_code(400);
+            echo "product id is required";
+    
             break;
-        }
-        http_response_code(400);
-        echo "product id is required";
-
-        break;
-
+    
     case 'DELETE':
-        if ($resourceID) {
-            $db->delete($resourceID);
+            if ($resourceID) {
+                $db->delete($resourceID);
+                echo json_encode(['message' => 'Product deleted successfully']);
+                break;
+            }
+            http_response_code(400);
+            echo "product id is required";
+    
             break;
-        }
-        http_response_code(400);
-        echo "product id is required";
-
-        break;
-
     default:
         http_response_code(405);
         echo "Method Not Allowed";
